@@ -1,0 +1,57 @@
+{
+  "name": "cotone",
+  "version": "1.0.0",
+  "description": "MIDI tick converter module for rhythm action game development",
+  "main": "lib/cotone.js",
+  "unpkg": "dist/cotone.js",
+  "module": "lib/cotone.esm.js",
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "clean": "rimraf types dist lib",
+    "pack": "npm run clean && npm run build && npm pack",
+    "test": "jest"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "types"
+  ],
+  "keywords": [
+    "game-dev",
+    "MIDI"
+  ],
+  "author": "pentamania",
+  "license": "MIT",
+  "jest": {
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "moduleNameMapper": {
+      "^#/(.+)": "<rootDir>/src/$1"
+    },
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.json"
+      }
+    },
+    "testMatch": [
+      "**/test/**/*.spec.ts"
+    ]
+  },
+  "devDependencies": {
+    "@rollup/plugin-replace": "^2.3.3",
+    "@types/jest": "^26.0.13",
+    "jest": "^26.4.2",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.26.10",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.27.2",
+    "ts-jest": "^26.3.0",
+    "typescript": "^4.0.2"
+  }
+}
