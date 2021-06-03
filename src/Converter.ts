@@ -1,36 +1,32 @@
-import {
-  tickToSec,
-  within,
-  secToTick,
-} from "./utils";
+import { tickToSec, within, secToTick } from './utils'
 import {
   TempoItem,
   TempoVariationItem,
   TimeRangeItem,
   Calculator,
-} from "./interfaces";
-import { splitTempoByVariationRange } from "./splitTempo";
+} from './interfaces'
+import { splitTempoByVariationRange } from './splitTempo'
 
 // const
-const DEFAULT_TEMPO = 120;
-const DEFAULT_TIMEBASE = 480;
+const DEFAULT_TEMPO = 120
+const DEFAULT_TIMEBASE = 480
 
 export class Converter {
-  private _timebase: number = DEFAULT_TIMEBASE;
-  private _tempoList!: TempoItem[];
-  private _variationList: TempoVariationItem[] = [];
+  private _timebase: number = DEFAULT_TIMEBASE
+  private _tempoList!: TempoItem[]
+  private _variationList: TempoVariationItem[] = []
 
   // テンポ時間範囲リスト（キャッシュ用）
-  private _tempoTimeRangeList: TimeRangeItem[] = [];
+  private _tempoTimeRangeList: TimeRangeItem[] = []
 
   // 最終的なテンポ遷移リスト
-  private _tempoVariationList: TimeRangeItem[] = [];
+  private _tempoVariationList: TimeRangeItem[] = []
 
   // 進行値計算機
-  private _progressCalculators!: Calculator[];
+  private _progressCalculators!: Calculator[]
 
   constructor() {
-    this.setTempo(DEFAULT_TEMPO);
+    this.setTempo(DEFAULT_TEMPO)
   }
 
   /**
@@ -39,19 +35,19 @@ export class Converter {
    * @param tick
    */
   convertTickToSec(tick: number): number {
-    let previousTime = 0;
-    let resultSec = 0;
+    let previousTime = 0
+    let resultSec = 0
 
     this._tempoList.some((tempoData, i) => {
-      const bpm = tempoData.value;
-      const sectionStartTick = tempoData.tick;
+      const bpm = tempoData.value
+      const sectionStartTick = tempoData.tick
       const nextSectionStartTick = this._tempoList[i + 1]
         ? this._tempoList[i + 1].tick
-        : null;
-      const tickDelta = tick - sectionStartTick;
+        : null
+      const tickDelta = tick - sectionStartTick
 
       // tick範囲外：現範囲より前
-      if (tick < sectionStartTick) return;
+      if (tick < sectionStartTick) return
 
       // tick範囲外：次範囲以降
       if (nextSectionStartTick && nextSectionStartTick < tick) {
@@ -60,26 +56,26 @@ export class Converter {
           nextSectionStartTick - sectionStartTick,
           bpm,
           this._timebase
-        );
-        return;
+        )
+        return
       }
 
       // tick範囲内：計算値が０でなければループ抜ける
-      resultSec = previousTime + tickToSec(tickDelta, bpm, this._timebase);
-      if (resultSec != 0) return true;
-    });
+      resultSec = previousTime + tickToSec(tickDelta, bpm, this._timebase)
+      if (resultSec != 0) return true
+    })
 
-    return resultSec;
+    return resultSec
   }
 
   /**
-   * tick単位をミリ秒単位に変換する  
+   * tick単位をミリ秒単位に変換する
    * convertTickToSecによる変換後、x1000しただけ
    *
    * @param tick
    */
   convertTickToMS(tick: number): number {
-    return this.convertTickToSec(tick) * 1000;
+    return this.convertTickToSec(tick) * 1000
   }
 
   /**
@@ -88,73 +84,73 @@ export class Converter {
    * @param sec
    */
   convertSecToTick(sec: number): number {
-    let resultTick = 0;
-    let pastTime = 0;
-    let currentTempo!: number; // 現領域BPM値
+    let resultTick = 0
+    let pastTime = 0
+    let currentTempo!: number // 現領域BPM値
 
     for (let i = 0; i < this._tempoList.length; i++) {
-      const tempoData = this._tempoList[i];
-      currentTempo = tempoData.value;
+      const tempoData = this._tempoList[i]
+      currentTempo = tempoData.value
       const nextSectionStartTick = this._tempoList[i + 1]
         ? this._tempoList[i + 1].tick
-        : null;
+        : null
       // テンポチェンジなし：ループを抜けて、現領域BPM値から残り時間の算出
-      if (!nextSectionStartTick) break;
+      if (!nextSectionStartTick) break
 
       // テンポチェンジがある: 現領域開始～次領域ボーダーまでに指定時間が含まれるかどうかを調べる
-      const tickDelta = nextSectionStartTick - resultTick;
-      const timeDelta = tickToSec(tickDelta, currentTempo, this._timebase);
+      const tickDelta = nextSectionStartTick - resultTick
+      const timeDelta = tickToSec(tickDelta, currentTempo, this._timebase)
 
       // ボーダー値を超えず、範囲内にある：ループを抜けて、現領域BPM値から残り時間の算出
-      if (sec <= pastTime + timeDelta) break;
+      if (sec <= pastTime + timeDelta) break
 
       // ボーダーを超えてた：現領域の総tick / 総経過時間を加算し、次のテンポ領域へ
-      resultTick += tickDelta;
-      pastTime += timeDelta;
+      resultTick += tickDelta
+      pastTime += timeDelta
     }
 
     // 残り時間をtick変換
-    resultTick += secToTick(sec - pastTime, currentTempo, this._timebase);
+    resultTick += secToTick(sec - pastTime, currentTempo, this._timebase)
 
-    return resultTick;
+    return resultTick
   }
 
   /**
-   * 予め生成したcalculatorを使って進行度を計算。時間範囲によって計算処理を変える  
-   * timeが負のとき、正に直してから計算、結果はマイナスで返す  
+   * 予め生成したcalculatorを使って進行度を計算。時間範囲によって計算処理を変える
+   * timeが負のとき、正に直してから計算、結果はマイナスで返す
    * 適当な時間範囲が存在しないときは0を返す
    *
    * @param time {number} - ミリ秒指定
    */
   getProgressByMS(time: number): number {
-    let isNeg = false;
+    let isNeg = false
     if (time < 0) {
-      isNeg = true;
-      time = Math.abs(time);
+      isNeg = true
+      time = Math.abs(time)
     }
-    let progress: number = 0;
-    this._progressCalculators.some((calcObj) => {
+    let progress: number = 0
+    this._progressCalculators.some(calcObj => {
       if (within(time, calcObj.range[0], calcObj.range[1])) {
-        progress = calcObj.func(time);
-        return true;
+        progress = calcObj.func(time)
+        return true
       }
-    });
-    return isNeg ? -progress : progress;
+    })
+    return isNeg ? -progress : progress
   }
 
   /**
    * Returns tempo of the specified miliSec
-   * 
-   * @param miliSec 
-   * @returns 
+   *
+   * @param miliSec
+   * @returns
    */
   getTempoByMS(miliSec: number): number {
-    const targetTick = this.convertSecToTick(miliSec * 0.001);
-    let resultTmpData = this._tempoList.reduce((pre, cur)=> {
-      if (cur.tick < targetTick) return cur;
-      return pre;
-    });
-    return resultTmpData.value;
+    const targetTick = this.convertSecToTick(miliSec * 0.001)
+    let resultTmpData = this._tempoList.reduce((pre, cur) => {
+      if (cur.tick < targetTick) return cur
+      return pre
+    })
+    return resultTmpData.value
   }
 
   /**
@@ -164,18 +160,18 @@ export class Converter {
    * @param msec
    */
   getVariedTempoByMS(msec: number): number {
-    const tempoSection = this._tempoVariationList.find((section) => {
-      const rng = section.range;
-      return within(msec, rng[0], rng[1]);
-    });
-    return tempoSection ? tempoSection.value : 0;
+    const tempoSection = this._tempoVariationList.find(section => {
+      const rng = section.range
+      return within(msec, rng[0], rng[1])
+    })
+    return tempoSection ? tempoSection.value : 0
   }
 
   /**
    * Returns current timebase
    */
   getTimebase(): number {
-    return this._timebase;
+    return this._timebase
   }
 
   /**
@@ -184,8 +180,8 @@ export class Converter {
    * @param v
    */
   setTimebase(v: number): void {
-    this._timebase = v;
-    this.setTempo();
+    this._timebase = v
+    this.setTempo()
   }
 
   /**
@@ -193,7 +189,7 @@ export class Converter {
    *
    * @param tempoValOrTempoList
    * Set tempo by number (when tempo is fixed) or in format of transition array.
-   * 
+   *
    * @param variationList
    * Optional. See {@link #setTempoVariation} for details.
    */
@@ -201,35 +197,35 @@ export class Converter {
     tempoValOrTempoList: number | TempoItem[] = this._tempoList,
     variationList?: TempoVariationItem[]
   ): void {
-    let tempoList:TempoItem[] = (Array.isArray(tempoValOrTempoList))
+    let tempoList: TempoItem[] = Array.isArray(tempoValOrTempoList)
       ? tempoValOrTempoList // THINKING: Clone the list?
-      : [{ tick:0 , value: tempoValOrTempoList }]
+      : [{ tick: 0, value: tempoValOrTempoList }]
 
-    tempoList.sort((a, b) => a.tick - b.tick);
-    this._tempoList = tempoList;
+    tempoList.sort((a, b) => a.tick - b.tick)
+    this._tempoList = tempoList
 
     // tempoRangeListの再設定
     this._tempoTimeRangeList = tempoList.map((tempo, i) => {
       // 最初のテンポ領域のときは開始点を強制的に負の無限大にする
-      const startTime = i === 0 ? -Infinity : this.convertTickToMS(tempo.tick);
+      const startTime = i === 0 ? -Infinity : this.convertTickToMS(tempo.tick)
 
       // 最後のテンポ領域のときは終点を強制的に無限大にする
-      const nextData: TempoItem | undefined = tempoList[i + 1];
-      const endTime = nextData ? this.convertTickToMS(nextData.tick) : Infinity;
+      const nextData: TempoItem | undefined = tempoList[i + 1]
+      const endTime = nextData ? this.convertTickToMS(nextData.tick) : Infinity
 
       return {
         range: [startTime, endTime],
         value: tempo.value,
-      };
-    });
+      }
+    })
 
-    this.setTempoVariation(variationList);
+    this.setTempoVariation(variationList)
   }
 
   /**
    * 逆走・停止・加減速処理リストをセットもしくは更新
    * 最終テンポ遷移リストとdistanceCalculatorも更新
-   * 
+   *
    * This visually changes the result of `getTempoBy~` and `getProgressBy~` method,
    * but does not affect tick <-> sec conversion.
    *
@@ -238,71 +234,71 @@ export class Converter {
   setTempoVariation(
     variationList: TempoVariationItem[] = this._variationList
   ): void {
-    this._variationList = variationList;
+    this._variationList = variationList
 
     // 実時間ベースのテンポ変化リストの作成
     const variationTimeRangeList: TimeRangeItem[] = this._variationList.map(
-      (varData) => {
+      varData => {
         // 開始点が0の場合、強制的に負の無限大にする
         const startTime =
-          varData.tick === 0 ? -Infinity : this.convertTickToMS(varData.tick);
-        const endTime = this.convertTickToMS(varData.tick + varData.duration);
-        const range: [number, number] = [startTime, endTime]; // tsコンパイラ対策
+          varData.tick === 0 ? -Infinity : this.convertTickToMS(varData.tick)
+        const endTime = this.convertTickToMS(varData.tick + varData.duration)
+        const range: [number, number] = [startTime, endTime] // tsコンパイラ対策
         return {
           range: range,
           value: varData.value,
-        };
+        }
       }
-    );
+    )
 
     // 最終的なテンポ遷移リスト(tempoVariationList)のセットアップ
-    this._tempoVariationList = this._tempoTimeRangeList;
-    variationTimeRangeList.forEach((section) => {
+    this._tempoVariationList = this._tempoTimeRangeList
+    variationTimeRangeList.forEach(section => {
       this._tempoVariationList = splitTempoByVariationRange(
         this._tempoVariationList,
         section
-      );
-    });
+      )
+    })
 
     // distanceCalculatorセットアップ
     {
-      let pastProgressSum = 0;
+      let pastProgressSum = 0
 
       // bpm領域毎に関数式を用意する
-      this._progressCalculators = this._tempoVariationList.map((section) => {
-        const tempoRange = section.range;
-        const tempoValue = section.value;
+      this._progressCalculators = this._tempoVariationList.map(section => {
+        const tempoRange = section.range
+        const tempoValue = section.value
 
         // 参照ではなくコピーが必要
-        const currentProgressSum = pastProgressSum;
+        const currentProgressSum = pastProgressSum
 
         // 開始時間が-Infinityだったら0にする
-        const startTime = tempoRange[0] !== -Infinity ? tempoRange[0] : 0;
+        const startTime = tempoRange[0] !== -Infinity ? tempoRange[0] : 0
 
         // 関数式の定義: tはミリ秒
-        const calcFunc: (t: number) => number = (ms) => {
+        const calcFunc: (t: number) => number = ms => {
           // 直前領域までの進行値 + 現領域での進行値 を返す
-          return currentProgressSum + tempoValue * (ms - startTime);
-        };
+          return currentProgressSum + tempoValue * (ms - startTime)
+        }
 
         // 進行積算値を更新
         // 最終領域（終点がInfinity）のときは無関係
-        pastProgressSum += tempoValue * (tempoRange[1] - startTime);
+        pastProgressSum += tempoValue * (tempoRange[1] - startTime)
 
         return {
           range: tempoRange,
           func: calcFunc,
-        };
-      });
+        }
+      })
     }
   }
 
   /**
-   * 
+   *
    */
   getTempoList(): TempoItem[] {
     return this._tempoList
   }
 }
 
-export default Converter;
+export default Converter
