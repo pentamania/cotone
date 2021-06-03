@@ -2,37 +2,87 @@
 
 MIDI tick converter library for rhythm action game development.
 
-## Install
+## About
 
-`npm i cotone`
+Since timescale of music depends on it's tempo (BPM), music note data are usually managed by MIDI-tick unit instead of real-time in common music editing apps.
+
+This library provides features for converting MIDI-tick <-> real-time, and also
+utils for drawing notes in rhythm action game app (which has note-speed changing feature by tempo).
+
+### Sample app
+
+See following codesandbox project
+https://codesandbox.io/s/cotone-sample-938j8
 
 ## Usage
 
+### Install
+
+```bash
+npm install cotone
+```
+
 ### Basic example
+
+First, let's create an instance of key class, `Converter`.
 
 ```js
 import { Converter } from 'cotone'
 
 const converter = new Converter()
-// converter.setTimebase(480) // Set ticks-per-quarter-note(TPQN) : default is 480
-converter.setTempo([ {tick: 0, value: 120} ]) // Tempo(BPM) set to 120
-console.log(converter.convertSecToTick(2))) // -> 1920
-console.log(converter.convertTickToSec(1920))) // -> 2
-console.log(converter.getProgressByMS(1000))) // -> 120000
-console.log(converter.getTempoByMS(1000))) // -> 120
 ```
 
-#### Traditional browser style
+_Optional_  
+The converting result depends on how you define the tick-unit value for quarter notes (This value is usually called "timebase", "ticks-per-quarter-note", "TPQN", etc.).
+Default is set to `480`, but you can customize it with `setTimebase`
+
+```js
+converter.setTimebase(480)
+```
+
+Then, set the tempo using `setTempo`.
+
+```js
+// BPM: 128
+converter.setTempo(128)
+```
+
+Now we're ready for conversion.  
+Assume we have a note data like below.
+
+```js
+const noteTicks = [
+  480, 960, 1920,
+  // ... and so on
+]
+```
+
+If you want real-time scale of these notes to schedule-play sounds, you can do like this.
+
+```js
+const sound = new Audio('path/to/mysound.wav')
+const noteRealSeconds = noteTicks.map(tick => converter.convertTickToSec(tick))
+
+noteRealSeconds.forEach(noteSec => {
+  setTimeout(() => {
+    sound.play()
+  }, noteSec * 1000)
+})
+```
+
+### Misc
+
+##### Traditional browser style
 
 ```html
 <script src="path/to/cotone.js"></script>
 <script type="text/javascript">
   const converter = new cotone.Converter()
-  // ...
+  // Same as above...
 </script>
 ```
 
-### Advanced example
+### Advanced
 
 TODO
 
@@ -42,8 +92,23 @@ TODO
 
 ## Development
 
-TODO
+### Build
+You should run `npm install` once to prepare building condition.
+
+#### Dev
+
+```bash
+npm run dev
+```
+
+#### Production
+
+```bash
+npm run build
+```
 
 ### Test
 
-`npm run test`
+```bash
+npm run test
+```
