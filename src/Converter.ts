@@ -156,6 +156,13 @@ export class Converter {
   }
 
   /**
+   * Returns current timebase
+   */
+  getTimebase(): number {
+    return this._timebase;
+  }
+
+  /**
    * 1beatを何tickとするかを指定、すべての基準となる数値。
    * テンポ遷移リスト等も更新
    * @param v
