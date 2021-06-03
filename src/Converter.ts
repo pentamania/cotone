@@ -143,11 +143,27 @@ export class Converter {
   }
 
   /**
-   * ミリ秒指定で現在のテンポ（BPM）を返す
+   * Returns tempo of the specified miliSec
+   * 
+   * @param miliSec 
+   * @returns 
+   */
+  getTempoByMS(miliSec: number): number {
+    const targetTick = this.convertSecToTick(miliSec * 0.001);
+    let resultTmpData = this._tempoList.reduce((pre, cur)=> {
+      if (cur.tick < targetTick) return cur;
+      return pre;
+    });
+    return resultTmpData.value;
+  }
+
+  /**
+   * **Method name is Temporary**
+   * Returns tempo of the specified time (affected by tempo variation list)
    *
    * @param msec
    */
-  getTempoByMS(msec: number): number {
+  getVariedTempoByMS(msec: number): number {
     const tempoSection = this._tempoVariationList.find((section) => {
       const rng = section.range;
       return within(msec, rng[0], rng[1]);
