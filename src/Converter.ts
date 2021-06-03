@@ -12,7 +12,7 @@ import {
 import { splitTempoByVariationRange } from "./splitTempo";
 
 // const
-const DEFAULT_TEMPO = [{ tick: 0, value: 120 }];
+const DEFAULT_TEMPO = 120;
 const DEFAULT_TIMEBASE = 480;
 
 export class Converter {
@@ -166,17 +166,22 @@ export class Converter {
   }
 
   /**
-   * テンポを設定
-   * tempoListは複製する？
+   * Sets the tempo (list)
    *
-   * @param tempoList テンポ設定リスト配列。未指定の場合、現在セットされているリストをベースに更新
-   * @param variationList オプショナル
+   * @param tempoValOrTempoList
+   * Set tempo by number (when tempo is fixed) or in format of transition array.
+   * 
+   * @param variationList
+   * Optional. See {@link #setTempoVariation} for details.
    */
   setTempo(
-    tempoList: TempoItem[] = this._tempoList,
+    tempoValOrTempoList: number | TempoItem[] = this._tempoList,
     variationList?: TempoVariationItem[]
   ): void {
-    // ソート必須
+    let tempoList:TempoItem[] = (Array.isArray(tempoValOrTempoList))
+      ? tempoValOrTempoList // THINKING: Clone the list?
+      : [{ tick:0 , value: tempoValOrTempoList }]
+
     tempoList.sort((a, b) => a.tick - b.tick);
     this._tempoList = tempoList;
 
@@ -201,6 +206,9 @@ export class Converter {
   /**
    * 逆走・停止・加減速処理リストをセットもしくは更新
    * 最終テンポ遷移リストとdistanceCalculatorも更新
+   * 
+   * This visually changes the result of `getTempoBy~` and `getProgressBy~` method,
+   * but does not affect tick <-> sec conversion.
    *
    * @param variationList 未指定の場合、現在セットされているリストをベースに更新
    */
