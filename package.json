@@ -2,9 +2,12 @@
   "name": "cotone",
   "version": "1.0.0",
   "description": "MIDI tick converter module for rhythm action game development",
+  "homepage": "https://github.com/pentamania/cotone",
+  "repository": "github:pentamania/cotone",
   "main": "lib/cotone.js",
   "unpkg": "dist/cotone.js",
   "module": "lib/cotone.esm.js",
+  "types": "types/index.d.ts",
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
