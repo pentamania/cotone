@@ -3,6 +3,9 @@
 /dist
 /types
 
+# documentation output
+/docs
+
 # Logs
 logs
 *.log
