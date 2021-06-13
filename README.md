@@ -11,16 +11,20 @@ utils for drawing notes in rhythm action game app (which has note-speed changing
 
 ### Sample app
 
-See following codesandbox project
+See following codesandbox project  
 https://codesandbox.io/s/cotone-sample-938j8
 
-## Usage
-
-### Install
+## Installation
 
 ```bash
 npm install cotone
 ```
+
+## Documentation
+
+[📝API Reference](https://pentamania.github.io/cotone/)
+
+## Usage
 
 ### Basic example
 
@@ -72,7 +76,7 @@ noteRealSeconds.forEach(noteSec => {
 
 ### Misc
 
-##### Traditional browser style
+#### Traditional browser style
 
 ```html
 <script src="path/to/cotone.js"></script>
@@ -82,11 +86,7 @@ noteRealSeconds.forEach(noteSec => {
 </script>
 ```
 
-### Advanced
-
-TODO
-
-## Documentation
+### Advanced example
 
 TODO
 
